@@ -19,7 +19,7 @@ variable "snowflake_warehouse" {
   default     = "COMPUTE_WH"
 }
 
-variable "snowflake_private_key" {
+variable "snowflake_private_key_path" {
   type        = string
   description = "RSA private key (PEM) for key-pair auth"
   sensitive   = true
