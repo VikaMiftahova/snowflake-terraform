@@ -3,7 +3,7 @@ name: terraform-destroy
 on: [workflow_dispatch]
 
 jobs:
-  apply:
+  destroy:
     environment: prod
     runs-on: ubuntu-latest
     steps:
