@@ -1,0 +1,95 @@
+name: terraform-snowflake
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: AWS Configure
+      uses: aws-actions/configure-aws-credentials@v6.0.0
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-north-1
+
+    - name: Write Snowflake private key to file
+      shell: bash
+      run: |
+        set -euo pipefail
+        install -m 600 /dev/null snowflake_key.pem
+        printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > snowflake_key.pem
+
+    - name: Terraform init
+      run: terraform init
+
+    - name: Terraform validate
+      run: terraform validate
+
+    - name: Terraform plan
+      env:
+        TF_VAR_snowflake_organization: ${{ secrets.SNOWFLAKE_ORGANIZATION }}
+        TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+        TF_VAR_snowflake_user: ${{ secrets.SNOWFLAKE_USER }}
+        TF_VAR_snowflake_role: ${{ secrets.SNOWFLAKE_ROLE }}
+        TF_VAR_snowflake_warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+        TF_VAR_snowflake_private_key_path: ${{ github.workspace }}/snowflake_key.pem
+      run: terraform plan -out=tfplan
+
+    - name: Cleanup key file
+      if: always()
+      run: rm -f snowflake_key.pem
+  
+  apply:
+    needs: plan
+    environment: prod
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: AWS Configure
+      uses: aws-actions/configure-aws-credentials@v6.0.0
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-north-1
+    
+    - name: Write Snowflake private key to file
+      shell: bash
+      run: |
+        set -euo pipefail
+        install -m 600 /dev/null snowflake_key.pem
+        printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > snowflake_key.pem
+
+    - name: Terraform init
+      run: terraform init
+
+    - name: Terraform validate
+      run: terraform validate
+
+    - name: Terraform apply (main only)
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      env:
+        TF_VAR_snowflake_organization: ${{ secrets.SNOWFLAKE_ORGANIZATION }}
+        TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+        TF_VAR_snowflake_user: ${{ secrets.SNOWFLAKE_USER }}
+        TF_VAR_snowflake_role: ${{ secrets.SNOWFLAKE_ROLE }}
+        TF_VAR_snowflake_warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+        TF_VAR_snowflake_private_key_path: ${{ github.workspace }}/snowflake_key.pem
+      run: terraform apply -auto-approve tfplan
+
+    - name: Cleanup key file
+      if: always()
+      run: rm -f snowflake_key.pem
