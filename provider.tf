@@ -18,7 +18,7 @@ terraform {
 
 provider "snowflake" {
   organization_name = var.snowflake_organization
-  account  = var.snowflake_account
+  account_name  = var.snowflake_account
   user     = var.snowflake_user
   role     = var.snowflake_role
   warehouse = var.snowflake_warehouse
