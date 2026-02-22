@@ -89,7 +89,7 @@ jobs:
         TF_VAR_snowflake_role: ${{ secrets.SNOWFLAKE_ROLE }}
         TF_VAR_snowflake_warehouse: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
         TF_VAR_snowflake_private_key_path: ${{ github.workspace }}/snowflake_key.pem
-      run: terraform apply -auto-approve tfplan
+      run: terraform apply -auto-approve
 
     - name: Cleanup key file
       if: always()
